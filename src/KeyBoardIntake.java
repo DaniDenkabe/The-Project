@@ -6,7 +6,7 @@ public class KeyBoardIntake implements KeyListener {
 	private EffectsModel model;
 	
 	public KeyBoardIntake() throws Exception {
-		model = new EffectsModel(false);
+		model = new EffectsModel(false, null, null, null);
 	}
 
 	@Override
@@ -286,6 +286,28 @@ public class KeyBoardIntake implements KeyListener {
 				System.out.println(model.getVariable(model.HUMGAIN));
 				System.out.println("0 PRESSED");
 			}
+			
+			else if (e.getKeyChar() == '/') {
+
+				model.changeVariable(model.LOOPERON, !model.getBooleanVariable(model.LOOPERON));
+				System.out.println(model.getBooleanVariable(model.LOOPERON));
+				System.out.println("/ PRESSED");
+			}
+			
+			else if (e.getKeyChar() == '-') {
+
+				model.changeVariable(model.LOOPSIZE, -0.05);
+				System.out.println(model.getVariable(model.LOOPSIZE));
+				System.out.println("- PRESSED");
+			}
+			
+			else if (e.getKeyChar() == '=') {
+
+				model.changeVariable(model.LOOPSIZE, 0.05);
+				System.out.println(model.getVariable(model.LOOPSIZE));
+				System.out.println("= PRESSED");
+			}
+			
 			
 		} catch (Exception x) {
 			

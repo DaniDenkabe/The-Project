@@ -37,18 +37,20 @@ public class Sample {
 	 * 		8:releaseCoeff
 	 * 		9:scaleParameter
 	 * 		10:makeupGainLinear
+	 * 		11:loopSize
 	 * booleanVariables:
 	 * 		0:anti-alias
 	 * 		1:flutterOn
+	 * 		2:looperOn
 	 */
 	public Sample() {
 		intVariables = new int[2][3];
 		
 		floatVariables = new float[13][3];
 		
-		doubleVariables = new double[11][3];
+		doubleVariables = new double[12][3];
 		
-		booleanVariables =  new boolean[2];
+		booleanVariables =  new boolean[3];
 		
 		intVariables[0][0] = 0;
 		intVariables[0][1] = 0;
@@ -75,7 +77,7 @@ public class Sample {
 		floatVariables[3][2] = 1;
 		
 		floatVariables[4][0] = 1;
-		floatVariables[4][1] = 0;
+		floatVariables[4][1] = 0.1f;
 		floatVariables[4][2] = 2;
 		
 		floatVariables[5][0] = 1;
@@ -157,8 +159,13 @@ public class Sample {
 		doubleVariables[10][1] = 0;
 		doubleVariables[10][2] = 4;
 		
+		doubleVariables[11][0] = 0.5;
+		doubleVariables[11][1] = 0.05;
+		doubleVariables[11][2] = 5;
+		
 		booleanVariables[0] = false;
 		booleanVariables[1] = false;
+		booleanVariables[2] = false;
 		
 //		ON & OFF-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 		onOff = new boolean[5];
@@ -191,7 +198,7 @@ public class Sample {
 	}
 	
 	public boolean getBooleanVariable(int index) {
-		return booleanVariables[index];
+		return booleanVariables[index - (intVariables.length + floatVariables.length + doubleVariables.length)];
 	}
 	
 	public void setVariable(int index, boolean newValue) {

@@ -83,24 +83,25 @@ public class EffectsModel {
 	public static final int RELEASE = 23;
 	public static final int SCALEPARAM = 24;
 	public static final int MAKEUPGAIN = 25;
-	public static final int ANTIALIAS = 0;
-	public static final int FLUTTERON = 1;
+	public static final int LOOPSIZE = 26;
+	public static final int ANTIALIAS = 27;
+	public static final int FLUTTERON = 28;
+	public static final int LOOPERON = 29;
 	
 	
 	private boolean isProcessing;
 	private int sampleRate = 44100;
-    private final int bufferSize = 2048;
+    private final int bufferSize = 1024;
     private final int overlap = 0;
 	private int selected;
 	private boolean mute;
 	private boolean master;
+	private float[] sharedBuffer;
+	private Object lock;
 	private Thread thread;
 	private Sample[] sampleValues;
 	private AudioDispatcher outputDispatcher;
-	private AudioDispatcher inputDispatcher1;
-	private AudioDispatcher inputDispatcher2;
-	private AudioDispatcher inputDispatcher3;
-	private AudioDispatcher inputDispatcher4;
+	private AudioDispatcher masterDispatcher;
 	
 	
 //	MOD VARIABLES--=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=
@@ -120,7 +121,7 @@ public class EffectsModel {
 //  TIMBRE / DEL-REV VAIABLES--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
     private DenkabeAmplitudeLFO lfo;
     private DelayEffect delay;
-    private boolean flutterOn;
+    private LoopProcessor looper;
 	
 //	COMPRESSOR VARIABLES--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 	private Compressor compressor;
@@ -138,21 +139,13 @@ public class EffectsModel {
     private GainProcessor clicksGain;
     private GainProcessor popsGain;
     private GainProcessor cracklesGain;
+
 	
-	public EffectsModel(boolean master) throws Exception {
-		AudioDispatcher inputDispatcher1 = null;
-		AudioDispatcher inputDispatcher2 = null;
-		AudioDispatcher inputDispatcher3 = null;
-		AudioDispatcher inputDispatcher4 = null;
-		this(master, inputDispatcher1, inputDispatcher2, inputDispatcher3, inputDispatcher4);
-	}
-	
-	public EffectsModel(boolean master, AudioDispatcher inputDispatcher1, AudioDispatcher inputDispatcher2, AudioDispatcher inputDispatcher3, AudioDispatcher inputDispatcher4) throws UnsupportedAudioFileException, IOException, LineUnavailableException {
+	public EffectsModel(boolean master, AudioDispatcher masterDispatcher, float[] sharedBuffer, Object lock) throws UnsupportedAudioFileException, IOException, LineUnavailableException {
 		this.master = master;
-		this.inputDispatcher1 = inputDispatcher1;
-		this.inputDispatcher2 = inputDispatcher2;
-		this.inputDispatcher3 = inputDispatcher3;
-		this.inputDispatcher4 = inputDispatcher4;
+		this.masterDispatcher = masterDispatcher;
+		this.sharedBuffer = sharedBuffer;
+		this.lock = lock;
 		
 		mute = false;
 		selected = 0;
@@ -175,8 +168,8 @@ public class EffectsModel {
     	post = new LowPassSP(0, sampleRate);
     	
     	lfo =  new DenkabeAmplitudeLFO(0, 0, 0);
-    	flutterOn = false;
     	delay =  new DelayEffect(sampleValues[selected].getVariable(20, 0), sampleValues[selected].getVariable(16, 0), sampleRate);
+    	looper = new LoopProcessor(sampleRate, 0);
     	
     	compressor = new Compressor(0, 0, 0, 0, 0, sampleRate);
 		
@@ -187,7 +180,7 @@ public class EffectsModel {
 		popsGain = new GainProcessor(0);
 		cracklesGain = new GainProcessor(0);
 		
-		for (int i = 0; i < 26; i++) {
+		for (int i = 0; i < 30; i++) {
 			this.updateProcessor(i);
 		}
 //		outputDispatcher = AudioDispatcherFactory.fromPipe("input2.wav", sampleRate, bufferSize, overlap);
@@ -201,14 +194,30 @@ public class EffectsModel {
 	    if (isProcessing) return;
 	    isProcessing = true;
 	    
-	    if (master) {
-			
-		}
-	    
 	    if (outputDispatcher != null) outputDispatcher.stop();
 	    
 	    outputDispatcher = AudioDispatcherFactory.fromPipe("input2.wav", sampleRate, bufferSize, overlap);
-	    outputDispatcher = AudioDispatcherFactory.fromDefaultMicrophone(sampleRate, bufferSize, overlap);
+//	    new Thread(outputDispatcher::run).start();
+	    
+	    if (master) {
+	    	lock = new Object();
+	        sharedBuffer = new float[bufferSize];
+	    	outputDispatcher.addAudioProcessor(new AudioProcessor() {
+	            @Override
+	            public boolean process(AudioEvent event) {
+	                float[] buffer = event.getFloatBuffer();
+	                synchronized (lock) {
+	                    System.arraycopy(sharedBuffer, 0, buffer, 0, bufferSize);
+	                    for (int i = 0; i < sharedBuffer.length; i++) sharedBuffer[i] = 0; // clear
+	                }
+	                return true;
+	            }
+	            @Override public void processingFinished() {}
+	        });
+		} else {
+//			outputDispatcher.addAudioProcessor(new BusSend(sharedBuffer, lock));;
+		}
+	    
 
 	    // HP, LP, Pitch, Gain
 	    if (sampleValues[selected].getOnOff()[0]) {
@@ -230,10 +239,11 @@ public class EffectsModel {
 
 	    // Flutter + Delay
 	    if (sampleValues[selected].getOnOff()[2]) {
-	        if (flutterOn) {
+	        if (sampleValues[selected].getBooleanVariable(FLUTTERON)) {
 	            outputDispatcher.addAudioProcessor(lfo);
 	        }
 	        outputDispatcher.addAudioProcessor(delay);
+	        outputDispatcher.addAudioProcessor(looper);
 	    }
 
 	    // Compressor
@@ -432,6 +442,12 @@ public class EffectsModel {
 			case MAKEUPGAIN:
 				compressor.setMakeUpGain(sampleValues[selected].getVariable(index, 0));
 				break;
+			case LOOPSIZE:
+				looper.setLoopLength(sampleValues[selected].getVariable(index, 0));
+				break;
+			case LOOPERON:
+				looper.setLooping(sampleValues[selected].getBooleanVariable(index));
+				break;
 		}	
 	}
     
@@ -448,6 +464,7 @@ public class EffectsModel {
     
     public void changeVariable(int index, boolean change) {
     	sampleValues[selected].setVariable(index, change);
+    	updateProcessor(index);
     }
     
     public double getVariable(int index) {
@@ -456,6 +473,14 @@ public class EffectsModel {
     
     public boolean getBooleanVariable(int index) {
     	return sampleValues[selected].getBooleanVariable(index);
+    }
+    
+    public Object getLock() {
+    	return lock;
+    }
+    
+    public float[] getSharedBuffer() {
+    	return sharedBuffer;
     }
    
 }
