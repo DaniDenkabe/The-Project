@@ -46,7 +46,7 @@ public class Sample {
 	public Sample() {
 		intVariables = new int[2][3];
 		
-		floatVariables = new float[13][3];
+		floatVariables = new float[12][3];
 		
 		doubleVariables = new double[12][3];
 		
@@ -84,8 +84,6 @@ public class Sample {
 		floatVariables[5][1] = 0;
 		floatVariables[5][2] = 3;
 		
-
-		
 		floatVariables[6][0] = 1;
 		floatVariables[6][1] = 0;
 		floatVariables[6][2] = 3;
@@ -109,10 +107,6 @@ public class Sample {
 		floatVariables[11][0] = 1;
 		floatVariables[11][1] = 0;
 		floatVariables[11][2] = 3;
-		
-		floatVariables[12][0] = 1;
-		floatVariables[12][1] = 0;
-		floatVariables[12][2] = 3;
 		
 		
 		doubleVariables[0][0] = 1;

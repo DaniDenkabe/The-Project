@@ -20,7 +20,7 @@ public class Intake {
 					int data = line / 100;
 					int origin = line % 100;
 					// Dealing with rotary encoders
-					if (origin < 25) {
+					if ((origin > 0 && origin < 5) || (origin > 6 && origin < 10) || (origin > 10 && origin < 12) || (origin > 12 && origin < 15)) {
 						if (data - lastValue[origin] != 0) {
 							System.out.println("Java Program change parameter for " + origin + ": " + (data - lastValue[origin]));
 							lastValue[origin] = data;

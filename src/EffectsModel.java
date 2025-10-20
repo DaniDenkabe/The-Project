@@ -63,35 +63,34 @@ import be.tarsos.dsp.resample.RateTransposer;
 public class EffectsModel {
 	
 	public static final int WAVE = 0;
-	public static final int BITDEPTH = 1;
-	public static final int PRE = 2;
-	public static final int POST = 3;
-	public static final int GAIN = 4;
-	public static final int CLIP = 5;
-	public static final int PITCH = 6;
-	public static final int HUMGAIN = 7;
-	public static final int POPSGAIN = 8;
-	public static final int CLICKSGAIN = 9;
-	public static final int RUMBLEGAIN = 10;
-	public static final int HPFREQ = 11;
-	public static final int LPFREQ = 12;
-	public static final int CRACKLESGAIN = 13;
-	public static final int VINYLNOISEGAIN = 14;
-	public static final int RATIO = 15;
-	public static final int DECAY = 16;
-	public static final int WAVEFREQ = 17;
-	public static final int THRESHOLD = 18;
-	public static final int NOISEGAIN = 19;
-	public static final int ECHOLENGTH = 20;
-	public static final int SAMPLERATE = 21;
-	public static final int ATTACK = 22;
-	public static final int RELEASE = 23;
-	public static final int SCALEPARAM = 24;
-	public static final int MAKEUPGAIN = 25;
-	public static final int LOOPSIZE = 26;
-	public static final int ANTIALIAS = 27;
-	public static final int FLUTTERON = 28;
-	public static final int LOOPERON = 29;
+	public static final int BITDEPTH = 1;//
+	public static final int PRE = 2;//
+	public static final int POST = 3;//
+	public static final int GAIN = 4;//---------------------------------------------------------------
+	public static final int CLIP = 5;//
+	public static final int PITCH = 6;//
+	public static final int HUMGAIN = 7;//
+	public static final int POPSGAIN = 8;//
+	public static final int CLICKSGAIN = 9;//
+	public static final int RUMBLEGAIN = 10;//
+	public static final int HPFREQ = 11;//
+	public static final int LPFREQ = 12;//
+	public static final int VINYLNOISEGAIN = 13;//
+	public static final int RATIO = 14;//
+	public static final int DECAY = 15;//
+	public static final int WAVEFREQ = 16;//
+	public static final int THRESHOLD = 17;//
+	public static final int NOISEGAIN = 18;//
+	public static final int ECHOLENGTH = 19;//
+	public static final int SAMPLERATE = 20;//-----------------------------------------------
+	public static final int ATTACK = 21;//
+	public static final int RELEASE = 22;//
+	public static final int SCALEPARAM = 23;//
+	public static final int MAKEUPGAIN = 24;//------------------------------------------------
+	public static final int LOOPSIZE = 25;//
+	public static final int ANTIALIAS = 26;
+	public static final int FLUTTERON = 27;
+	public static final int LOOPERON = 28;
 	
 	private String fileName = "input2.wav";
 	
@@ -130,19 +129,16 @@ public class EffectsModel {
 	private Compressor compressor;
 	
 //	VINYL VARIABLES--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-	private AudioDispatcher[] noiseDispatchers;
 	private AudioDispatcher vinylNoiseDispatcher;
 	private AudioDispatcher humDispatcher;	
 	private AudioDispatcher rumbleDispatcher;	
 	private AudioDispatcher clicksDispatcher;
 	private AudioDispatcher popsDispatcher;
-	private AudioDispatcher cracklesDispatcher;
     private GainProcessor vinylNoiseGain;
     private GainProcessor humGain;
     private GainProcessor rumbleGain;
     private GainProcessor clicksGain;
     private GainProcessor popsGain;
-    private GainProcessor cracklesGain;
 
     
 	public EffectsModel() throws UnsupportedAudioFileException, IOException, LineUnavailableException {
@@ -177,16 +173,11 @@ public class EffectsModel {
     	
     	compressor = new Compressor(0, 0, 0, 0, 0, sampleRate);
 		
-    	noiseDispatchers = new AudioDispatcher[6];
-    	for (int i = 0; i < noiseDispatchers.length; i++) {
-    		noiseDispatchers[i] = AudioDispatcherFactory.fromPipe("VINYLNOISE1.wav", sampleRate, bufferSize, overlap);
-    	}
 		vinylNoiseGain = new GainProcessor(0);
 		humGain = new GainProcessor(0);
 		rumbleGain = new GainProcessor(0);
 		clicksGain = new GainProcessor(0);
 		popsGain = new GainProcessor(0);
-		cracklesGain = new GainProcessor(0);
 		
 		for (int i = 0; i < 30; i++) {
 			this.updateProcessor(i);
@@ -316,20 +307,6 @@ public class EffectsModel {
 	    	    }
 	    	}).start();  
 	    	
-	    	new Thread(() -> {
-	    	    try {
-	    	        while (true) {
-	    	        	cracklesDispatcher = AudioDispatcherFactory.fromPipe("VINYLCRACKLES1.wav", sampleRate, bufferSize, overlap);
-	    	        	cracklesDispatcher.addAudioProcessor(cracklesGain);	
-	    	        	cracklesDispatcher.addAudioProcessor(
-	    	        			new AudioPlayer(new AudioFormat(sampleRate, 16, 1, true, false)));
-	    	        	cracklesDispatcher.run();
-	    	        }
-	    	    } catch (Exception e) {
-	    	        e.printStackTrace();
-	    	    }
-	    	}).start();  
-	    	
 	    }
 
 	    // List available output devices (Mixers)
@@ -410,9 +387,9 @@ public class EffectsModel {
 			case LPFREQ:	
 				lowPass.setFrequency((float) sampleValues[selected].getVariable(index, 0));	
 				break;
-			case CRACKLESGAIN:
-				cracklesGain.setGain((float) sampleValues[selected].getVariable(index, 0));
-				break;
+//			case CRACKLESGAIN:
+//				cracklesGain.setGain((float) sampleValues[selected].getVariable(index, 0));
+//				break;
 			case VINYLNOISEGAIN:
 				vinylNoiseGain.setGain((float) sampleValues[selected].getVariable(index, 0));
 				break;
