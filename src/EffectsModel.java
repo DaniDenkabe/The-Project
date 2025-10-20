@@ -9,9 +9,14 @@ import be.tarsos.dsp.filters.HighPass;
 //import be.tarsos.dsp.filters.LowPassFS;
 import be.tarsos.dsp.filters.LowPassSP;
 import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.DataLine;
+//import javax.sound.sampled.*;
 //import javax.sound.sampled.AudioInputStream;
 //import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.Mixer;
+import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import be.tarsos.dsp.effects.DelayEffect;
 //import be.tarsos.dsp.resample.Resampler;
@@ -88,6 +93,7 @@ public class EffectsModel {
 	public static final int FLUTTERON = 28;
 	public static final int LOOPERON = 29;
 	
+	private String fileName = "input2.wav";
 	
 	private boolean isProcessing;
 	private int sampleRate = 44100;
@@ -95,13 +101,10 @@ public class EffectsModel {
     private final int overlap = 0;
 	private int selected;
 	private boolean mute;
-	private boolean master;
-	private float[] sharedBuffer;
-	private Object lock;
 	private Thread thread;
 	private Sample[] sampleValues;
 	private AudioDispatcher outputDispatcher;
-	private AudioDispatcher masterDispatcher;
+	private GainProcessor muteGain;
 	
 	
 //	MOD VARIABLES--=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=
@@ -127,6 +130,7 @@ public class EffectsModel {
 	private Compressor compressor;
 	
 //	VINYL VARIABLES--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+	private AudioDispatcher[] noiseDispatchers;
 	private AudioDispatcher vinylNoiseDispatcher;
 	private AudioDispatcher humDispatcher;	
 	private AudioDispatcher rumbleDispatcher;	
@@ -140,12 +144,10 @@ public class EffectsModel {
     private GainProcessor popsGain;
     private GainProcessor cracklesGain;
 
-	
-	public EffectsModel(boolean master, AudioDispatcher masterDispatcher, float[] sharedBuffer, Object lock) throws UnsupportedAudioFileException, IOException, LineUnavailableException {
-		this.master = master;
-		this.masterDispatcher = masterDispatcher;
-		this.sharedBuffer = sharedBuffer;
-		this.lock = lock;
+    
+	public EffectsModel() throws UnsupportedAudioFileException, IOException, LineUnavailableException {
+		
+		if (fileName.equals(null)) fileName = "";
 		
 		mute = false;
 		selected = 0;
@@ -154,6 +156,8 @@ public class EffectsModel {
 		for (int i = 0; i < sampleValues.length; i++) {
 			sampleValues[i] = new Sample();
 		}
+		
+		muteGain = new GainProcessor(1);
 		
 		highPass = new HighPass(0, sampleRate);
 		lowPass = new LowPassSP(0, sampleRate);
@@ -173,6 +177,10 @@ public class EffectsModel {
     	
     	compressor = new Compressor(0, 0, 0, 0, 0, sampleRate);
 		
+    	noiseDispatchers = new AudioDispatcher[6];
+    	for (int i = 0; i < noiseDispatchers.length; i++) {
+    		noiseDispatchers[i] = AudioDispatcherFactory.fromPipe("VINYLNOISE1.wav", sampleRate, bufferSize, overlap);
+    	}
 		vinylNoiseGain = new GainProcessor(0);
 		humGain = new GainProcessor(0);
 		rumbleGain = new GainProcessor(0);
@@ -196,27 +204,11 @@ public class EffectsModel {
 	    
 	    if (outputDispatcher != null) outputDispatcher.stop();
 	    
-	    outputDispatcher = AudioDispatcherFactory.fromPipe("input2.wav", sampleRate, bufferSize, overlap);
+	    outputDispatcher = AudioDispatcherFactory.fromPipe(fileName, sampleRate, bufferSize, overlap);
 //	    new Thread(outputDispatcher::run).start();
+
 	    
-	    if (master) {
-	    	lock = new Object();
-	        sharedBuffer = new float[bufferSize];
-	    	outputDispatcher.addAudioProcessor(new AudioProcessor() {
-	            @Override
-	            public boolean process(AudioEvent event) {
-	                float[] buffer = event.getFloatBuffer();
-	                synchronized (lock) {
-	                    System.arraycopy(sharedBuffer, 0, buffer, 0, bufferSize);
-	                    for (int i = 0; i < sharedBuffer.length; i++) sharedBuffer[i] = 0; // clear
-	                }
-	                return true;
-	            }
-	            @Override public void processingFinished() {}
-	        });
-		} else {
-//			outputDispatcher.addAudioProcessor(new BusSend(sharedBuffer, lock));;
-		}
+	    outputDispatcher.addAudioProcessor(muteGain);
 	    
 
 	    // HP, LP, Pitch, Gain
@@ -340,8 +332,22 @@ public class EffectsModel {
 	    	
 	    }
 
-		outputDispatcher.addAudioProcessor(new AudioPlayer(new AudioFormat(sampleRate, 16, 1, true, false)));
-		
+	    // List available output devices (Mixers)
+        Mixer.Info[] mixers = AudioSystem.getMixerInfo();
+        DataLine.Info info = new DataLine.Info(SourceDataLine.class, new AudioFormat(sampleRate, 16, 1, true, false));
+
+        for (int i = 0; i < mixers.length; i++) {
+            Mixer m = AudioSystem.getMixer(mixers[i]);
+            if (m.isLineSupported(info)) {
+                System.out.println(i + ": " + mixers[i].getName());
+            } else {
+                System.out.println(i + ": " + mixers[i].getName() + " (no playback support)");
+            }
+        }
+
+        Mixer mixer = AudioSystem.getMixer(mixers[12]); // change index to your device
+		outputDispatcher.addAudioProcessor(new DenkabeAudioPlayer(new AudioFormat(sampleRate, 16, 1, true, false), mixer));
+
 		thread = new Thread(outputDispatcher);
 		
 		thread.start();
@@ -351,10 +357,11 @@ public class EffectsModel {
 	
 	public void mute() {
 		if (mute) {
-			gain.setGain(sampleValues[selected].getVariable(GAIN, 0));
+			muteGain.setGain(1);
 		} else {
 			gain.setGain(0);
-		}
+		}		
+		mute = !mute;
 	}
 
 	
@@ -473,14 +480,6 @@ public class EffectsModel {
     
     public boolean getBooleanVariable(int index) {
     	return sampleValues[selected].getBooleanVariable(index);
-    }
-    
-    public Object getLock() {
-    	return lock;
-    }
-    
-    public float[] getSharedBuffer() {
-    	return sharedBuffer;
     }
    
 }

@@ -173,7 +173,7 @@ public class Sample {
 		onOff[1] = true;
 		onOff[2] = true;
 		onOff[3] = true;
-		onOff[4] = true;
+		onOff[4] = false;
 		
 	}
 	

@@ -4,9 +4,11 @@ import java.awt.event.KeyListener;
 public class KeyBoardIntake implements KeyListener {
 	
 	private EffectsModel model;
+	private EffectsModel subModel;
+	private EffectsModel subModel2;
 	
 	public KeyBoardIntake() throws Exception {
-		model = new EffectsModel(false, null, null, null);
+		model = new EffectsModel();
 	}
 
 	@Override

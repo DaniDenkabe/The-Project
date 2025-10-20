@@ -4,7 +4,7 @@ import java.util.Scanner; // Import the Scanner class to read text files
 
 public class Intake {
 	public static void main(String[] args) throws Exception {
-		EffectsModel model = new EffectsModel(false, null, null, null);
+		EffectsModel model = new EffectsModel();
 		int[] lastValue = new int[25];
 		for (int i = 0; i < 25; i++) {
 			lastValue[i] = 0;
