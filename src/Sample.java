@@ -72,9 +72,9 @@ public class Sample {
 		floatVariables[2][1] = 0;
 		floatVariables[2][2] = 3;
 		
-		floatVariables[3][0] = 1;
+		floatVariables[3][0] = 10;
 		floatVariables[3][1] = 0;
-		floatVariables[3][2] = 1;
+		floatVariables[3][2] = 10;
 		
 		floatVariables[4][0] = 1;
 		floatVariables[4][1] = 0.1f;
@@ -113,8 +113,8 @@ public class Sample {
 		doubleVariables[0][1] = 1;
 		doubleVariables[0][2] = 20;
 		
-		doubleVariables[1][0] = 0;
-		doubleVariables[1][1] = 0;
+		doubleVariables[1][0] = 0.01;
+		doubleVariables[1][1] = 0.01;
 		doubleVariables[1][2] = 1;
 		
 		doubleVariables[2][0] = 0;
@@ -130,7 +130,7 @@ public class Sample {
 		doubleVariables[4][2] = 0.05;
 		
 		doubleVariables[5][0] = 0.05;
-		doubleVariables[5][1] = 0;
+		doubleVariables[5][1] = 0.05;
 		doubleVariables[5][2] = 100;
 		
 		doubleVariables[6][0] = 44100;

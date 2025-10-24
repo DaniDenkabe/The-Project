@@ -168,7 +168,7 @@ public class EffectsModel {
     	post = new LowPassSP(0, sampleRate);
     	
     	lfo =  new DenkabeAmplitudeLFO(0, 0, 0);
-    	delay =  new DelayEffect(sampleValues[selected].getVariable(20, 0), sampleValues[selected].getVariable(16, 0), sampleRate);
+    	delay =  new DelayEffect(sampleValues[selected].getVariable(ECHOLENGTH, 0), sampleValues[selected].getVariable(DECAY, 0), sampleRate);
     	looper = new LoopProcessor(sampleRate, 0);
     	
     	compressor = new Compressor(0, 0, 0, 0, 0, sampleRate);
@@ -322,7 +322,7 @@ public class EffectsModel {
             }
         }
 
-        Mixer mixer = AudioSystem.getMixer(mixers[12]); // change index to your device
+        Mixer mixer = AudioSystem.getMixer(mixers[14]); // change index to your device
 		outputDispatcher.addAudioProcessor(new DenkabeAudioPlayer(new AudioFormat(sampleRate, 16, 1, true, false), mixer));
 
 		thread = new Thread(outputDispatcher);
